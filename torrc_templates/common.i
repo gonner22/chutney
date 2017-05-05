@@ -30,7 +30,7 @@ TestingMinExitFlagThreshold 0
 #Default VoteOnHidServDirectoriesV2 1
 
 ## Options that we always want to test ##
-Sandbox 1
+Sandbox 0
 
 DataDirectory $dir
 RunAsDaemon 1
