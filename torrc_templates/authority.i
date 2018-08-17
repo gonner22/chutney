@@ -11,7 +11,7 @@ ContactInfo auth${nodenum}@test.test
 # If clock desynchronisation is an issue, use an interval of at least:
 #   18 * drift in seconds, to allow for a clock slop factor
 TestingV3AuthInitialVotingInterval 5
-V3AuthVotingInterval 10
+V3AuthVotingInterval 180
 # VoteDelay + DistDelay must be less than VotingInterval
 TestingV3AuthInitialVoteDelay 2
 V3AuthVoteDelay 2
