@@ -1,11 +1,18 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 set -o errexit
 set -o nounset
 
-export PYTHONPATH="$(dirname "${0}")/lib:${PYTHONPATH-}"
+PYTHONPATH="$(dirname "${0}")/lib:$(dirname "${0}")/scripts:${PYTHONPATH-}"
+export PYTHONPATH
+# make a last-ditch effort to set CHUTNEY_PATH based on this script's location
+if ! test "${CHUTNEY_PATH+y}"
+then
+    CHUTNEY_PATH=$(dirname "$0")
+    export CHUTNEY_PATH
+fi
 
-binaries="python2 python"
+binaries="python python3 python2"
 
 if ! test "${PYTHON+y}"
 then
@@ -46,5 +53,5 @@ then
     exit 1
 fi
 
-printf "Using %s\n" "$("${PYTHON}" --version 2>&1)"
+printf "\nLaunching chutney using %s\n" "$("${PYTHON}" --version 2>&1)"
 "${PYTHON}" -m chutney.TorNet "${@}"
