@@ -12,7 +12,6 @@ AssumeReachable 1
 PathsNeededToBuildCircuits 0.67
 TestingDirAuthVoteExit *
 TestingDirAuthVoteHSDir *
-V3AuthNIntervalsValid 2
 
 ## Always On Testing Options ##
 # We enable TestingDirAuthVoteGuard to avoid Guard stability requirements
