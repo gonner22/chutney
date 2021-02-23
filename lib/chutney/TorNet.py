@@ -34,7 +34,7 @@ import chutney.Traffic
 import chutney.Util
 
 # Keep in sync with torrc_templates/authority.i V3AuthVotingInterval
-V3_AUTH_VOTING_INTERVAL = 180.0
+V3_AUTH_VOTING_INTERVAL = 20.0
 
 _BASE_ENVIRON = None
 _TOR_VERSIONS = None

@@ -28,6 +28,6 @@ TestingV3AuthInitialDistDelay 4
 # tor uses Interval/2 as the voting interval
 #
 # Keep in sync with scripts/chutney_tests/verify.py V3_AUTH_VOTING_INTERVAL
-V3AuthVotingInterval 180
+V3AuthVotingInterval 20
 V3AuthVoteDelay 4
 V3AuthDistDelay 4
