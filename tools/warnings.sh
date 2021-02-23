@@ -2,14 +2,39 @@
 #
 # Usage:
 #    tools/warnings.sh [node]
-# Output: for each node outputs its warnings and the number of times that
-# warning has ocurred. If the argument node is specified, it only shows
-# the warnings of that node.
-# Examples: tools/warnings.sh
-#           tools/warnings.sh 000a
+#
+# Output:
+#    for each node, show the warnings, and the number of times that warning
+#    has ocurred.
+#
+#    If the argument "node" is specified, only shows the warnings of that
+#    node.
+#
+# Examples:
+#    tools/warnings.sh
+#    tools/warnings.sh 000a
+#
 # Environmental variables:
-# CHUTNEY_WARNINGS_IGNORE_EXPECTED: set to "true" to filter expected warnings
-# CHUTNEY_WARNINGS_SUMMARY: set to "true" to merge warnings from all instances
+#
+#    CHUTNEY_WARNINGS_IGNORE_EXPECTED:
+#        set to "true" to filter expected warnings
+#
+#    CHUTNEY_WARNINGS_SUMMARY:
+#        set to "true" to merge warnings from all instances
+#
+#    CHUTNEY_WARNINGS_SKIP:
+#        set to "true" to skip all warnings
+
+set -o errexit
+set -o nounset
+
+# Set some default values if the variables are not already set
+: "${CHUTNEY_WARNINGS_SKIP:=false}"
+: "${CHUTNEY_DATA_DIR:=}"
+
+if [ "$CHUTNEY_WARNINGS_SKIP" = true ]; then
+    exit 0
+fi
 
 if [ ! -d "$CHUTNEY_PATH" ] || [ ! -x "$CHUTNEY_PATH/chutney" ]; then
     # looks like a broken path: use the path to this tool instead
@@ -23,15 +48,25 @@ if [ -d "$PWD/$CHUTNEY_PATH" ] && [ -x "$PWD/$CHUTNEY_PATH/chutney" ]; then
 fi
 
 # Get a working net path
-if [ ! -d "$CHUTNEY_DATA_DIR" ]; then
-    # looks like a broken path: use the chutney path as a base
-    export CHUTNEY_DATA_DIR="$CHUTNEY_PATH/net"
-fi
-if [ -d "$PWD/$CHUTNEY_DATA_DIR" ]; then
-    # looks like a relative path: make chutney path absolute
-    export CHUTNEY_DATA_DIR="$PWD/$CHUTNEY_DATA_DIR"
-fi
+case "$CHUTNEY_DATA_DIR" in
+  /*)
+    # if an absolute path, then leave as-is
+    # chutney will make this directory automatically if needed
+    ;;
+  *)
+    # if a relative path
+    if [ ! -d "$CHUTNEY_DATA_DIR" ]; then
+        # looks like a broken path: use the chutney path as a base
+        export CHUTNEY_DATA_DIR="$CHUTNEY_PATH/net"
+    fi
+    if [ -d "$PWD/$CHUTNEY_DATA_DIR" ]; then
+        # looks like a relative path: make chutney path absolute
+        export CHUTNEY_DATA_DIR="$PWD/$CHUTNEY_DATA_DIR"
+    fi
+    ;;
+esac
 
+# Show the warnings for node $1
 show_warnings() {
     # Work out the file and filter settings
     LOGS=$(mktemp)
@@ -77,8 +112,11 @@ show_warnings() {
     if [ "$CHUTNEY_WARNINGS_SUMMARY" != true ]; then
         $ECHO_Q ""
     fi
+    # Remove the temporary files we created
+    rm "${LOGS}" "${FILTERED_LOGS}"
 }
 
+# Show the usage message for this script
 usage() {
     echo "Usage: $NAME [node]"
     exit 1
@@ -89,6 +127,10 @@ if [ -t 1 ]; then
     NC=$(tput sgr0)
     YELLOW=$(tput setaf 3)
     GREEN=$(tput setaf 2)
+else
+    NC=""
+    YELLOW=""
+    GREEN=""
 fi
 
 NAME=$(basename "$0")
@@ -106,7 +148,7 @@ FILTER='s/^.*\[(warn|err)\]//p'
 # use the --quiet setting from test-network.sh, if available
 ECHO_Q=${ECHO:-"echo"}
 
-[ -d "$DEST" ] || { echo "$NAME: no logs available"; exit 1; }
+[ -d "$DEST" ] || { echo "$NAME: no logs available in '$DEST'"; exit 1; }
 if [ $# -eq 0 ];
 then
     if [ "$CHUTNEY_WARNINGS_SUMMARY" = true ]; then

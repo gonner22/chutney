@@ -1,14 +1,23 @@
 #!/bin/sh
 #
 # Usage:
-#    tools/hsaddress.sh [hs_node]
-# Output: for each HS outputs its onion address. If the argument node is
-#    specified, it only shows the onion address of that node.
-# Examples: tools/hsaddress.sh
-#           tools/hsaddress.sh 025h
+#    tools/truncate-logs.sh [node]
+#
+# Output:
+#    for each node, truncate the logs
+#
+#    If the argument "node" is specified, only truncates the logs of that
+#    node.
+#
+# Examples:
+#    tools/truncate-logs.sh
+#    tools/truncate-logs.sh 000a
 
 set -o errexit
 set -o nounset
+
+# Set some default values if the variables are not already set
+: "${CHUTNEY_DATA_DIR:=}"
 
 if [ ! -d "$CHUTNEY_PATH" ] || [ ! -x "$CHUTNEY_PATH/chutney" ]; then
     # looks like a broken path: use the path to this tool instead
@@ -40,37 +49,37 @@ case "$CHUTNEY_DATA_DIR" in
     ;;
 esac
 
-NAME=$(basename "$0")
-DEST="$CHUTNEY_DATA_DIR/nodes"
-TARGET=hidden_service/hostname
+# Truncate the logs for node $1
+truncate_logs() {
+    echo "Truncating log: $1"
+    truncate -s 0 "$1"
+}
 
+# Show the usage message for this script
 usage() {
-    echo "Usage: $NAME [hs_node]"
+    echo "Usage: $NAME [node]"
     exit 1
 }
 
-show_address() {
-    cat "$1"
-}
+NAME=$(basename "$0")
+DEST="$CHUTNEY_DATA_DIR/nodes"
+LOG_FILE=*.log
 
-[ -d "$DEST" ] || { echo "$NAME: no nodes available"; exit 1; }
+[ -d "$DEST" ] || { echo "$NAME: no logs available in '$DEST'"; exit 1; }
 if [ $# -eq 0 ];
 then
-    # support hOLD
-    for dir in "$DEST"/*h*;
+    for log in "$DEST"/*/$LOG_FILE;
     do
-        FILE="${dir}/$TARGET"
-        [ -e "$FILE" ] || continue
-        echo "Node $(basename "$dir"): " | tr -d "\n"
-        show_address "$FILE"
+        [ -e "${log}" ] || continue
+        truncate_logs "$log"
     done
 elif [ $# -eq 1 ];
 then
-    [ -d "$DEST/$1" ] || { echo "$NAME: $1 not found"; exit 1; }
-    # we don't check the name of the HS directory, because tags vary
-    FILE="$DEST/$1/$TARGET"
-    [ -e "$FILE" ] || { echo "$NAME: $FILE not found"; exit 1; }
-    show_address "$FILE"
+    for log in "$DEST"/$1/$LOG_FILE;
+    do
+        [ -e "${log}" ] || continue
+        truncate_logs "$log"
+    done
 else
     usage
 fi
