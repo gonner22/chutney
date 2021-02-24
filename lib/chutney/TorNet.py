@@ -2551,7 +2551,7 @@ class Network(object):
             if now >= limit:
                 break
             if now >= next_print_status:
-                if checks_since_last_print <= Network.CHECKS_PER_PRINT/2:
+                if checks_since_last_print <= Network.CHECKS_PER_PRINT/4:
                     self.print_bootstrap_status(controllers,
                                                 most_recent_desc_status,
                                                 elapsed=elapsed,
