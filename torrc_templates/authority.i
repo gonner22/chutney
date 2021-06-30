@@ -21,6 +21,6 @@ TestingV3AuthInitialVoteDelay 4
 TestingV3AuthInitialDistDelay 4
 # Vote + Dist must be less than Interval/2, because when there's no consensus,
 # tor uses Interval/2 as the voting interval
-V3AuthVotingInterval 180
-V3AuthVoteDelay 4
-V3AuthDistDelay 4
+V3AuthVotingInterval 3600
+V3AuthVoteDelay 300
+V3AuthDistDelay 300
