@@ -871,7 +871,7 @@ class LocalNodeBuilder(NodeBuilder):
         relays return "".
         """
         if not self._env['bridge']:
-            return ""
+            return ("", "")
 
         if self._env['pt_bridge']:
             port = self._env['ptport']
@@ -883,7 +883,7 @@ class LocalNodeBuilder(NodeBuilder):
             transport = ""
             extra = ""
 
-        BRIDGE_LINE_TEMPLATE = "Bridge %s %s:%s %s %s\n"
+        BRIDGE_LINE_TEMPLATE = "%s %s:%s %s %s\n"
 
         bridgelines = BRIDGE_LINE_TEMPLATE % (transport,
                                               self._env['ip'],
@@ -896,7 +896,7 @@ class LocalNodeBuilder(NodeBuilder):
                                                    port,
                                                    self._env['fingerprint'],
                                                    extra)
-        return bridgelines
+        return ("Bridge " + bridgelines, bridgelines)
 
 
 class LocalNodeController(NodeController):
@@ -2336,6 +2336,7 @@ class Network(object):
         bridgelines = []
         arti_fallback_lines = []
         arti_auth_lines = []
+        arti_bridgelines = []
         all_builders = [ n.getBuilder() for n in self._nodes ]
         builders = [ b for b in all_builders
                      if b._env['config_phase'] == phase ]
@@ -2351,7 +2352,9 @@ class Network(object):
             altauthlines.append(tor_auth_line)
             arti_fallback_lines.append(arti_fallback)
             arti_auth_lines.append(arti_auth)
-            bridgelines.append(b._getBridgeLines())
+            tor_bridgeline, arti_bridgeline = b._getBridgeLines()
+            bridgelines.append(tor_bridgeline)
+            arti_bridgelines.append(arti_bridgeline)
 
         self._dfltEnv['authorities'] = "".join(altauthlines)
         self._dfltEnv['bridges'] = "".join(bridgelines)
@@ -2383,7 +2386,15 @@ fallback_caches = [
             f.write("]\n")
             f.write("authorities = [\n")
             f.write("".join(arti_auth_lines))
-            f.write("]")
+            f.write("]\n")
+
+            f.write("""[bridges]
+enabled = "auto"
+bridges = '''
+""")
+            f.write("".join(arti_bridgelines))
+            f.write("'''\n")
+
 
         for b in builders:
             b.postConfig(network)
