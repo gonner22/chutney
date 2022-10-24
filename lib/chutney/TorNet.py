@@ -867,8 +867,9 @@ class LocalNodeBuilder(NodeBuilder):
         return (authlines, arti_lines)
 
     def _getBridgeLines(self):
-        """Return potential Bridge line for this Node. Non-bridge
-        relays return "".
+        """Return tuple of string containing potential Bridge line for this Node.
+        First element is the line in torrc format, and 2nd is the same line in raw/arti format.
+        Non-bridge relays return ("", "").
         """
         if not self._env['bridge']:
             return ("", "")
