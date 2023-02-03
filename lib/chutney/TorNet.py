@@ -14,7 +14,6 @@ from __future__ import unicode_literals
 
 from pathlib import Path
 
-import cgitb
 import errno
 import importlib
 import os
@@ -43,9 +42,6 @@ _THE_NETWORK = None
 
 TORRC_OPTION_WARN_LIMIT = 10
 torrc_option_warn_count =  0
-
-# Get verbose tracebacks, so we can diagnose better.
-cgitb.enable(format="plain")
 
 class MissingBinaryException(Exception):
     pass
