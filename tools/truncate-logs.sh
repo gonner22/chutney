@@ -63,11 +63,12 @@ usage() {
 
 NAME=$(basename "$0")
 DEST="$CHUTNEY_DATA_DIR/nodes"
-LOG_FILE=*.log
+LOG_FILE="*.log"
 
 [ -d "$DEST" ] || { echo "$NAME: no logs available in '$DEST'"; exit 1; }
 if [ $# -eq 0 ];
 then
+    # shellcheck disable=SC2231
     for log in "$DEST"/*/$LOG_FILE;
     do
         [ -e "${log}" ] || continue
@@ -75,7 +76,7 @@ then
     done
 elif [ $# -eq 1 ];
 then
-    for log in "$DEST"/$1/$LOG_FILE;
+    for log in "$DEST/$1/"$LOG_FILE;
     do
         [ -e "${log}" ] || continue
         truncate_logs "$log"

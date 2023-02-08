@@ -64,8 +64,8 @@ myname=$(basename "$0")
     { echo "$myname: missing chutney: $CHUTNEY"; exit 1; }
 
 # Set the variables for the chutney network flavour
-export NETWORK_FLAVOUR=${NETWORK_FLAVOUR:-"bridges+hs-v23"}
-[ -n "$1" ] && { NETWORK_FLAVOUR=$1; shift; }
+export NETWORK_FLAVOUR="${NETWORK_FLAVOUR:-bridges+hs-v23}"
+[ -n "${1-}" ] && { NETWORK_FLAVOUR=$1; shift; }
 export CHUTNEY_NETWORK="$CHUTNEY_PATH/networks/$NETWORK_FLAVOUR"
 
 [ -e "$CHUTNEY_NETWORK" ] || \
@@ -81,7 +81,7 @@ fi
 # Find out how many phases there are.  This will set CHUTNEY_CONFIG_PHASES
 # and CHUTNEY_LAUNCH_PHASES.
 if [ -z "${CHUTNEY_CONFIG_PHASES:-}" ] || [ -z "${CHUTNEY_LAUNCH_PHASES:-}" ]; then
-    eval "$("$CHUTNEY" print_phases "$CHUTNEY_NETWORK" |grep =)"
+    eval "$("$CHUTNEY" print_phases "$CHUTNEY_NETWORK" |grep '=')"
 fi
 
 $ECHO "$myname: bootstrapping network: $NETWORK_FLAVOUR"
@@ -105,7 +105,7 @@ for launch_idx in $(seq 1 "$CHUTNEY_LAUNCH_PHASES"); do
 
     # We allow up to CHUTNEY_START_TIME for each bootstrap phase to
     # complete.
-    export CHUTNEY_START_TIME=${CHUTNEY_START_TIME:-120}
+    export CHUTNEY_START_TIME="${CHUTNEY_START_TIME:-120}"
 
     if [ "$CHUTNEY_START_TIME" -ge 0 ]; then
 	$ECHO "Waiting up to $CHUTNEY_START_TIME seconds for all nodes in phase ${launch_idx} to bootstrap..."
