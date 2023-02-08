@@ -9,21 +9,21 @@ export ECHO="${ECHO:-echo}"
 myname=$(basename "$0")
 
 # default to one round
-export CHUTNEY_ROUNDS=${CHUTNEY_ROUNDS:-1}
+export CHUTNEY_ROUNDS="${CHUTNEY_ROUNDS:-1}"
 
 # default to summarising unexpected warnings
-export CHUTNEY_WARNINGS_IGNORE_EXPECTED=${CHUTNEY_WARNINGS_IGNORE_EXPECTED:-true}
-export CHUTNEY_WARNINGS_SUMMARY=${CHUTNEY_WARNINGS_SUMMARY:-true}
+export CHUTNEY_WARNINGS_IGNORE_EXPECTED="${CHUTNEY_WARNINGS_IGNORE_EXPECTED:-true}"
+export CHUTNEY_WARNINGS_SUMMARY="${CHUTNEY_WARNINGS_SUMMARY:-true}"
 
 # default to exiting when this script exits
-export CHUTNEY_CONTROLLING_PID=${CHUTNEY_CONTROLLING_PID:-$$}
+export CHUTNEY_CONTROLLING_PID="${CHUTNEY_CONTROLLING_PID:-$$}"
 
 # default to allowing zero failures
-export CHUTNEY_ALLOW_FAILURES=${CHUTNEY_ALLOW_FAILURES:-0}
+export CHUTNEY_ALLOW_FAILURES="${CHUTNEY_ALLOW_FAILURES:-0}"
 
 # default to no DNS: this is a safe, working default for most users
 # If a custom test expects DNS, it needs to set CHUTNEY_DNS_CONF
-export CHUTNEY_DNS_CONF=${CHUTNEY_DNS_CONF:-/dev/null}
+export CHUTNEY_DNS_CONF="${CHUTNEY_DNS_CONF:-/dev/null}"
 
 # Chutney changes the sandbox default, based on the platform. It's set to 1 on
 # Linux, which is the only tor platform with a supported sandbox.
@@ -373,7 +373,7 @@ fi
 $ECHO "$myname: Using \$CHUTNEY_TOR: '$CHUTNEY_TOR' and \$CHUTNEY_TOR_GENCERT: '$CHUTNEY_TOR_GENCERT'"
 
 # Set the variables for the chutney network flavour
-export NETWORK_FLAVOUR=${NETWORK_FLAVOUR:-"bridges+hs-v23"}
+export NETWORK_FLAVOUR="${NETWORK_FLAVOUR:-bridges+hs-v23}"
 export CHUTNEY_NETWORK="$CHUTNEY_PATH/networks/$NETWORK_FLAVOUR"
 
 export DIAGNOSTIC_COMMAND="$CHUTNEY_PATH/tools/diagnostics.sh"
