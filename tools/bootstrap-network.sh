@@ -65,7 +65,7 @@ myname=$(basename "$0")
 
 # Set the variables for the chutney network flavour
 export NETWORK_FLAVOUR=${NETWORK_FLAVOUR:-"bridges+hs-v23"}
-[ -n "$1" ] && { NETWORK_FLAVOUR=$1; shift; }
+[ -n "${1-}" ] && { NETWORK_FLAVOUR=$1; shift; }
 export CHUTNEY_NETWORK="$CHUTNEY_PATH/networks/$NETWORK_FLAVOUR"
 
 [ -e "$CHUTNEY_NETWORK" ] || \
