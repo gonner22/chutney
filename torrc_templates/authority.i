@@ -31,3 +31,5 @@ TestingV3AuthInitialDistDelay 4
 V3AuthVotingInterval 20
 V3AuthVoteDelay 4
 V3AuthDistDelay 4
+
+ConsensusParams cc_alg=2
