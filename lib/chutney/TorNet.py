@@ -25,7 +25,6 @@ from chutney.Debug import debug_flag, debug
 
 import chutney.Host
 import chutney.Templating
-import chutney.Traffic
 import chutney.Util
 
 _BASE_ENVIRON = None
