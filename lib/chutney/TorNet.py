@@ -29,7 +29,6 @@ from chutney.Debug import debug_flag, debug
 
 import chutney.Host
 import chutney.Templating
-import chutney.Traffic
 import chutney.Util
 
 # Keep in sync with torrc_templates/authority.i V3AuthVotingInterval
