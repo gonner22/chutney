@@ -1,6 +1,17 @@
+# Future imports for Python 2.7, mandatory in 3.0
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import time
 import chutney
+import chutney.TorNet
+import chutney.Traffic
 
+# Try to verify twice each consensus, but don't verify too fast
+V3_AUTH_VOTING_INTERVAL = chutney.TorNet.V3_AUTH_VOTING_INTERVAL
+VERIFY_ATTEMPT_INTERVAL = V3_AUTH_VOTING_INTERVAL/2.0 - 1.0
+TIMEOUT_INTERVAL = max(VERIFY_ATTEMPT_INTERVAL - 1.0, 5.0)
 
 def run_test(network):
     wait_time = network._dfltEnv['bootstrap_time']
@@ -10,20 +21,28 @@ def run_test(network):
           % wait_time)
     status = False
     # Keep on retrying the verify until it succeeds or times out
-    while not status and time.time() < end_time:
+    now = start_time
+    while not status and now < end_time:
         # TrafficTester connections time out after ~3 seconds
-        # a TrafficTester times out after ~10 seconds if no data is being sent
-        status = _verify_traffic(network)
+        # a TrafficTester times out after ~6 seconds if no data is being sent
+        last_attempt_time = now
+        status = _verify_traffic(network, timeout=TIMEOUT_INTERVAL)
+        now = time.time()
+        elapsed_attempt_time = now - last_attempt_time
         # Avoid madly spewing output if we fail immediately each time
         if not status:
-            time.sleep(5)
+            # We want at least 2 verify attempts per consensus interval
+            sleep_time = VERIFY_ATTEMPT_INTERVAL - elapsed_attempt_time
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+                now = time.time()
     print("Transmission: %s" % ("Success" if status else "Failure"))
     if not status:
         print("Set CHUTNEY_DEBUG to diagnose.")
     return status
 
 
-def _verify_traffic(network):
+def _verify_traffic(network, timeout=5.0):
     """Verify (parts of) the network by sending traffic through it
     and verify what is received."""
     # TODO: IPv6 SOCKSPorts, SOCKSPorts with IPv6Traffic, and IPv6 Exits
@@ -39,8 +58,7 @@ def _verify_traffic(network):
     # and a source-sink pair for a (bridge) client to each hidden service
     DATALEN = network._dfltEnv['data_bytes']
     # Print a dot each time a sink verifies this much data
-    DOTDATALEN = 5 * 1024 * 1024  # Octets.
-    TIMEOUT = 3                   # Seconds.
+    DOTDATALEN = 5 * 1024 * 1024  # Octets
     # Calculate the amount of random data we should use
     randomlen = _calculate_randomlen(DATALEN)
     reps = _calculate_reps(DATALEN, randomlen)
@@ -61,8 +79,11 @@ def _verify_traffic(network):
         tmpdata = {}
     # now make the connections
     bind_to = (LISTEN_ADDR, LISTEN_PORT)
-    tt = chutney.Traffic.TrafficTester(bind_to, tmpdata, TIMEOUT, reps,
-                                       dot_reps)
+    tt = chutney.Traffic.TrafficTester(bind_to,
+                                       data=tmpdata,
+                                       timeout=timeout,
+                                       repetitions=reps,
+                                       dot_repetitions=dot_reps)
     # _env does not implement get() due to its fallback to parent behaviour
     client_list = filter(lambda n:
                          n._env['tag'].startswith('c') or
