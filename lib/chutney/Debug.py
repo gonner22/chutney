@@ -7,15 +7,13 @@
 #  restrict, so long as you retain the above notice(s) and this license
 #  in all redistributed copies and derived works.  There is no warranty.
 
+# Future imports for Python 2.7, mandatory in 3.0
+from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
 
-import cgitb
 import os
 import sys
-
-# Get verbose tracebacks, so we can diagnose better.
-cgitb.enable(format="plain")
-
 
 # Set debug_flag=True in order to debug this program or to get hints
 # about what's going wrong in your system.

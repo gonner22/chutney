@@ -1,31 +1,52 @@
 #!/bin/sh
 
+set -o errexit
+set -o nounset
+
 export ECHO="${ECHO:-echo}"
 
 # Output is prefixed with the name of the script
 myname=$(basename "$0")
 
 # default to one round
-export CHUTNEY_ROUNDS=${CHUTNEY_ROUNDS:-1}
+export CHUTNEY_ROUNDS="${CHUTNEY_ROUNDS:-1}"
 
 # default to summarising unexpected warnings
-export CHUTNEY_WARNINGS_IGNORE_EXPECTED=${CHUTNEY_WARNINGS_IGNORE_EXPECTED:-true}
-export CHUTNEY_WARNINGS_SUMMARY=${CHUTNEY_WARNINGS_SUMMARY:-true}
+export CHUTNEY_WARNINGS_IGNORE_EXPECTED="${CHUTNEY_WARNINGS_IGNORE_EXPECTED:-true}"
+export CHUTNEY_WARNINGS_SUMMARY="${CHUTNEY_WARNINGS_SUMMARY:-true}"
 
 # default to exiting when this script exits
-export CHUTNEY_CONTROLLING_PID=${CHUTNEY_CONTROLLING_PID:-$$}
+export CHUTNEY_CONTROLLING_PID="${CHUTNEY_CONTROLLING_PID:-$$}"
 
 # default to allowing zero failures
-export CHUTNEY_ALLOW_FAILURES=${CHUTNEY_ALLOW_FAILURES:-0}
+export CHUTNEY_ALLOW_FAILURES="${CHUTNEY_ALLOW_FAILURES:-0}"
 
 # default to no DNS: this is a safe, working default for most users
 # If a custom test expects DNS, it needs to set CHUTNEY_DNS_CONF
-export CHUTNEY_DNS_CONF=${CHUTNEY_DNS_CONF:-/dev/null}
+export CHUTNEY_DNS_CONF="${CHUTNEY_DNS_CONF:-/dev/null}"
+
+# Chutney changes the sandbox default, based on the platform. It's set to 1 on
+# Linux, which is the only tor platform with a supported sandbox.
+#export CHUTNEY_TOR_SANDBOX=1
+
+# Set some default values if the variables are not already set
+: "${CHUTNEY_WARNINGS_ONLY:=false}"
+: "${CHUTNEY_WARNINGS_SKIP:=false}"
+: "${CHUTNEY_DIAGNOSTICS_ONLY:=false}"
+: "${NETWORK_DRY_RUN:=false}"
+: "${USE_COVERAGE_BINARY:=false}"
+: "${CHUTNEY_DIAGNOSTICS:=false}"
+: "${CHUTNEY_DATA_DIR:=}"
+: "${TOR_DIR:=}"
+: "${TOR_APP_DIR:=}"
+: "${CHUTNEY_PATH:=}"
+: "${CHUTNEY_TOR:=}"
+: "${CHUTNEY_TOR_GENCERT:=}"
 
 # what we say when we fail
 UPDATE_YOUR_CHUTNEY="Please update your chutney using 'git pull'."
 
-until [ -z "$1" ]
+until [ -z "${1:-}" ]
 do
     case "$1" in
         # the path to the chutney directory
@@ -56,22 +77,32 @@ do
             export NETWORK_FLAVOUR="$2"
             shift
         ;;
-        # The amount of time chutney will wait before starting to verify
-        # If negative, chutney exits straight after launching the network
+        # The maximum amount of time chutney will wait for bootstrap and
+        # dir info distribution, before failing.
+        # If negative, chutney exits straight after launching the network.
         --start-time)
             export CHUTNEY_START_TIME="$2"
             shift
         ;;
-        # The amount of time chutney will try to verify, before failing
-        # If negative, chutney exits without verifying
+        # The minimum amount of time chutney will wait, regardless of
+        # bootstrap or dir info distribution, before starting to verify.
+        # If negative, chutney does not wait for any extra time.
+        # (No default, because chutney picks a default based on the tor
+        # version.)
+        --min-start-time)
+            export CHUTNEY_MIN_START_TIME="$2"
+            shift
+        ;;
+        # The amount of time chutney will try to verify, before failing.
+        # If negative, chutney exits without verifying.
         --delay|--sleep|--bootstrap-time|--time|--verify-time)
             # This isn't the best name for this variable, but we kept it the
             # same for backwards compatibility
             export CHUTNEY_BOOTSTRAP_TIME="$2"
             shift
         ;;
-        # The amount of time chutney will wait after successfully verifying
-        # If negative, chutney exits without stopping
+        # The amount of time chutney will wait after successfully verifying.
+        # If negative, chutney exits without stopping.
         --stop-time)
             export CHUTNEY_STOP_TIME="$2"
             shift
@@ -131,6 +162,11 @@ do
         --dns-conf-default)
             export CHUTNEY_DNS_CONF=""
             ;;
+        # Enable or disable tor's sandbox, overriding the default
+        --sandbox)
+            export CHUTNEY_TOR_SANDBOX="$2"
+            shift
+            ;;
         # Warning Options
         # we summarise unexpected warnings by default
         # this shows all warnings per-node
@@ -145,6 +181,14 @@ do
         # this skips warnings entirely
         --no-warnings)
             export CHUTNEY_WARNINGS_SKIP=true
+            ;;
+        # output diagnostics after chutney runs
+        --diagnostics)
+            export CHUTNEY_DIAGNOSTICS=true
+            ;;
+        # this doesn't run chutney, and only logs diagnostics
+        --only-diagnostics)
+            export CHUTNEY_DIAGNOSTICS_ONLY=true
             ;;
         # Expert options
         # Code Coverage Binary
@@ -183,9 +227,18 @@ do
     shift
 done
 
+if [ "$CHUTNEY_WARNINGS_ONLY" = true ] || \
+   [ "$CHUTNEY_DIAGNOSTICS_ONLY" = true ]; then
+    NETWORK_DRY_RUN=true
+fi
+
+if [ "$CHUTNEY_DIAGNOSTICS_ONLY" = true ]; then
+    export CHUTNEY_DIAGNOSTICS=true
+fi
+
 # If the DNS server doesn't work, tor exits may reject all exit traffic, and
 # chutney may fail
-if [ "$CHUTNEY_WARNINGS_ONLY" != true ]; then
+if [ "$NETWORK_DRY_RUN" != true ]; then
     $ECHO "$myname: using CHUTNEY_DNS_CONF '$CHUTNEY_DNS_CONF'"
 fi
 
@@ -198,8 +251,8 @@ fi
 #    $CHUTNEY_TOR and $CHUTNEY_TOR_GENCERT, or $PATH
 #
 # Find the Tor build dir using the src/tools dir
-if [ ! -d "$TOR_DIR" ]; then
-    if [ -d "$BUILDDIR/src/tools" ]; then
+if [ ! -d "${TOR_DIR:-}" ]; then
+    if [ -d "${BUILDDIR:-}/src/tools" ]; then
         # Choose the build directory
         # But only if it looks like one
         $ECHO "$myname: \$TOR_DIR not set, trying \$BUILDDIR"
@@ -216,7 +269,7 @@ if [ ! -d "$TOR_DIR" ]; then
         export TOR_DIR="$PWD/../tor"
     else
         $ECHO "$myname: no \$TOR_DIR, chutney will use \$CHUTNEY_TOR and \$CHUTNEY_TOR_GENCERT as tor binary paths, or search \$PATH for tor binary names"
-        unset TOR_DIR
+        export TOR_DIR=""
     fi
 fi
 
@@ -234,7 +287,7 @@ if [ -d "$TOR_DIR" ]; then
         TOR_APP_DIR="$TOR_DIR/src/or"
     else
         $ECHO "$myname: \$TOR_DIR has no src/app or src/or, looking elsewhere"
-        unset TOR_DIR
+        TOR_DIR=""
     fi
 fi
 
@@ -320,8 +373,15 @@ fi
 $ECHO "$myname: Using \$CHUTNEY_TOR: '$CHUTNEY_TOR' and \$CHUTNEY_TOR_GENCERT: '$CHUTNEY_TOR_GENCERT'"
 
 # Set the variables for the chutney network flavour
-export NETWORK_FLAVOUR=${NETWORK_FLAVOUR:-"bridges+hs-v2"}
+export NETWORK_FLAVOUR="${NETWORK_FLAVOUR:-bridges+hs-v23}"
 export CHUTNEY_NETWORK="$CHUTNEY_PATH/networks/$NETWORK_FLAVOUR"
+
+export DIAGNOSTIC_COMMAND="$CHUTNEY_PATH/tools/diagnostics.sh"
+if [ "$CHUTNEY_DIAGNOSTICS" = true ]; then
+    export DIAGNOSTICS="$DIAGNOSTIC_COMMAND"
+else
+    export DIAGNOSTICS=true
+fi
 
 export WARNING_COMMAND="$CHUTNEY_PATH/tools/warnings.sh"
 if [ "$CHUTNEY_WARNINGS_SKIP" = true ]; then
@@ -331,7 +391,10 @@ else
 fi
 
 # And finish up if we're doing a dry run
-if [ "$NETWORK_DRY_RUN" = true ] || [ "$CHUTNEY_WARNINGS_ONLY" = true ]; then
+if [ "$NETWORK_DRY_RUN" = true ]; then
+    if [ "$CHUTNEY_DIAGNOSTICS_ONLY" = true ]; then
+        "$DIAGNOSTICS"
+    fi
     if [ "$CHUTNEY_WARNINGS_ONLY" = true ]; then
         "$WARNINGS"
     fi
@@ -346,7 +409,7 @@ max_attempts=$((CHUTNEY_ALLOW_FAILURES+1))
 
 while [ "$n_attempts" -lt "$max_attempts" ]; do
     n_attempts=$((n_attempts+1))
-    $ECHO "==== Running tests: attempt $n_attempts/$max_attempts"
+    $ECHO "==== Running tests: bootstrap attempt $n_attempts/$max_attempts"
     if "$CHUTNEY_PATH/tools/test-network-impl.sh"; then
 	$ECHO "==== Chutney succeeded after $n_attempts attempt(s)."
 	exit 0
@@ -354,7 +417,12 @@ while [ "$n_attempts" -lt "$max_attempts" ]; do
     if test "$?" = 77; then
 	exit 77
     fi
+    # Wait a little while after failures
+    if [ "$n_attempts" -lt "$max_attempts" ]; then
+        $ECHO "==== Failed bootstrap attempt $n_attempts, trying again..."
+        sleep 6
+    fi
 done
 
-$ECHO "Chutney failed $n_attempts times; we may have a problem here."
+$ECHO "Chutney failed $n_attempts bootstraps; we may have a problem here."
 exit 1

@@ -20,14 +20,15 @@
 #
 # For example code, see main() below.
 
+# Future imports for Python 2.7, mandatory in 3.0
+from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
 
 import sys
 import socket
 import struct
-import errno
 import time
-import os
 
 import asyncore
 import asynchat
@@ -437,7 +438,7 @@ class TrafficTester(object):
         while now < end and not self.tests.all_done():
             # run only one iteration at a time, with a nice short timeout, so we
             # can actually detect completion and timeouts.
-            asyncore.loop(0.2, False, self.socket_map, 1)
+            asyncore.loop(5.0, False, self.socket_map, 1)
             now = time.time()
             if now > dump_at:
                 debug("Test status: %s"%self.tests.status())
