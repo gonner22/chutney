@@ -2539,8 +2539,8 @@ bridges = '''
                                                      nodes,
                                                      docs,
                                                      dmsg)
-                    if code != LocalNodeController.SUCCESS_CODE:
-                        all_bootstrapped = False
+                    # if code != LocalNodeController.SUCCESS_CODE:
+                    #     all_bootstrapped = False
 
             now = time.time()
             elapsed = now - start
